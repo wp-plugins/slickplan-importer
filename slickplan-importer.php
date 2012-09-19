@@ -2,10 +2,10 @@
 /*
 Plugin Name: Slickplan Importer
 Plugin URI: http://wordpress.org/extend/plugins/slickplan-importer/
-Description: Import pages from a Slickplan's XML export file.
+Description: Import pages from a Slickplan's XML export file. To use go to the Tools -> Import screen and click on Slickplan.
 Author: slickplan.com
 Author URI: http://slickplan.com/
-Version: 0.1
+Version: 0.2
 License: GPL version 2 or later - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
@@ -34,6 +34,7 @@ if (class_exists('WP_Importer')) {
             // 'post_parent' => '',
             // 'post_title' => '',
         );
+        private $_import_notes = false;
 
         public function dispatch()
         {
@@ -46,7 +47,14 @@ if (class_exists('WP_Importer')) {
                     echo '<div class="narrow">';
                     if (function_exists('simplexml_load_file')) {
                         echo '<p>' . __('This importer allows you to import pages structure from a Slickplan\'s XML export file into your WordPress site. Pick an XML file to upload and click Import.', 'slickplan-importer') . '</p>';
+                        ob_start();
                         wp_import_upload_form('admin.php?import=slickplan&step=1');
+                        $form = ob_get_contents();
+                        ob_end_clean();
+                        if (strpos($form, '</p>') !== false){
+                            $form = substr_replace($form, '<p><label for="importnotes"><input type="checkbox" name="importnotes" id="importnotes" value="2"> ' . __('Import Notes as Pages Contents', 'slickplan-importer') . '</label></p>', strpos($form, '</p>') + 4, 0);
+                        } 
+                        echo $form;
                     }
                     else {
                         echo '<p>' . __('Sorry! This importer requires the libxml and SimpleXML PHP extensions.', 'slickplan-importer') . '</p>';
@@ -70,6 +78,9 @@ if (class_exists('WP_Importer')) {
             foreach ($data as $item) {
                 $page = $this->_default_data;
                 $page['post_title'] = (string) $item->title;
+                if ($this->_import_notes) {
+                    $page['post_content'] = (string) $item->description;
+                }
                 if ($parent_id) {
                     $page['post_parent'] = $parent_id;
                 }
@@ -122,6 +133,9 @@ if (class_exists('WP_Importer')) {
             if (isset($this->_xml->items->item)) {
                 $this->_fetch_pages($this->_xml->items->item);
             }
+            if (isset($this->_xml->footer->item)) {
+                $this->_fetch_pages($this->_xml->footer->item);
+            }
             echo '</ol>';
         }
 
@@ -137,7 +151,7 @@ if (class_exists('WP_Importer')) {
                 libxml_use_internal_errors(true);
             }
             $this->_xml = simplexml_load_file($file['file']);
-
+            $this->_import_notes = (isset($_POST['importnotes']) and intval($_POST['importnotes']) === 2);
             if (isset($this->_xml->link, $this->_xml->items, $this->_xml->title, $this->_xml->version) and strstr($this->_xml->link, 'slickplan')) {
                 $result = $this->_import_pages();
             }
