@@ -18,6 +18,9 @@ Import pages from a Slickplan's XML export file.
 
 == Changelog ==
 
+= 0.3 =
+* New: Import sections
+
 = 0.2 =
 * New: Import notes as pages contents
 * New: Import footer section items
