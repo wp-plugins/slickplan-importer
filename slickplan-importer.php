@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/slickplan-importer/
 Description: Import pages from a Slickplan's XML export file. To use go to the <a href="import.php">Tools -> Import</a> screen and select Slickplan.
 Author: slickplan.com
 Author URI: http://slickplan.com/
-Version: 0.3
+Version: 0.4
 License: GPL version 2 or later - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
@@ -29,6 +29,7 @@ if (class_exists('WP_Importer')) {
         private $_xml;
         private $_default_data = array();
         private $_import_notes = false;
+        private $_ignore_external = false;
         private $_import_sections = 4;
         private $_sitemap = array();
         private $_parsed_array;
@@ -61,7 +62,10 @@ if (class_exists('WP_Importer')) {
                         ob_end_clean();
                         if (strpos($form, '</p>') !== false){
                             $form = substr_replace($form,
-                                '<p><label for="importnotes"><input type="checkbox" name="importnotes" id="importnotes" value="2"> Import Notes as Pages Contents</label></p>'
+                                '<p>'
+                              . '<label for="importnotes"><input type="checkbox" name="importnotes" id="importnotes" value="2"> Import Notes as Pages Contents</label><br>'
+                              . '<label for="excludeexternal"><input type="checkbox" name="excludeexternal" id="excludeexternal" value="2"> Ignore pages marked as \'External\' archetype (this will also ignore child pages and sections)</label>'
+                              . '</p>'
                               . '<p>Sections:<br /><label for="importsections_2"><input type="radio" name="importsections" id="importsections_2" value="2" checked="checked"> Import as Child Pages</label><br />'
                               . '<label for="importsections_3"><input type="radio" name="importsections" id="importsections_3" value="3"> Import as Pages</label><br />'
                               . '<label for="importsections_4"><input type="radio" name="importsections" id="importsections_4" value="4"> Do Not Import</label></p>'
@@ -135,6 +139,7 @@ if (class_exists('WP_Importer')) {
             }
             $this->_xml = simplexml_load_file($file['file']);
             $this->_import_notes = (isset($_POST['importnotes']) and intval($_POST['importnotes']) === 2);
+            $this->_ignore_external = (isset($_POST['excludeexternal']) and intval($_POST['excludeexternal']) === 2);
             $this->_import_sections = isset($_POST['importsections']) ? intval($_POST['importsections']) : 4;
             if (isset($this->_xml->link, $this->_xml->title, $this->_xml->version) and strstr($this->_xml->link, 'slickplan')) {
                 echo '<ol>';
@@ -144,6 +149,9 @@ if (class_exists('WP_Importer')) {
                         break;
                     }
                     foreach ($array as $item) {
+                        if (isset($item['data']['archetype']) and $item['data']['archetype'] === 'external') {
+                            continue;
+                        }
                         $this->_create_page($item);
                     }
                 }
@@ -219,6 +227,9 @@ if (class_exists('WP_Importer')) {
                 $cell = array('name' => (string) $item->title);
                 if (isset($item->description)) {
                     $cell['data']['note'] = (string) $item->description;
+                }
+                if (isset($item->archetype)) {
+                    $cell['data']['archetype'] = (string) $item->archetype;
                 }
                 if (isset($item->section) and intval($item->section) > 0 and in_array(intval($item->section), $this->_sections_list, true)) {
                     $cell['data']['section'] = (int) $item->section;
