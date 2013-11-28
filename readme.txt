@@ -3,7 +3,7 @@ Contributors: slickplan
 Donate link: http://slickplan.com/
 Tags: slickplan, import, xml
 Requires at least: 3.0
-Tested up to: 3.5.1
+Tested up to: 3.7.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -17,6 +17,9 @@ Import pages from a Slickplan's XML export file.
 3. Go to the 'Tools' -> 'Import' screen, Click on 'Slickplan'
 
 == Changelog ==
+
+= 0.5 =
+* New: New Slickplan XML format compatibility
 
 = 0.4 =
 * New: Option to ignore pages marked as 'External' archetype

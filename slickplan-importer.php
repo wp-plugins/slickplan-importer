@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/slickplan-importer/
 Description: Import pages from a Slickplan's XML export file. To use go to the <a href="import.php">Tools -> Import</a> screen and select Slickplan.
 Author: slickplan.com
 Author URI: http://slickplan.com/
-Version: 0.4
+Version: 0.5
 License: GPL version 2 or later - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
@@ -92,6 +92,46 @@ if (class_exists('WP_Importer')) {
         private function _create_page($item, $parent_id = 0)
         {
             $page = $this->_default_data;
+            $page['post_title'] = (string) $item['text'];
+            $label = 'Importing page';
+            if ($this->_import_notes and isset($item['desc']) and !empty($item['desc'])) {
+                $page['post_content'] = (string) $item['desc'];
+                $label .= ' with content';
+            }
+            if (!$parent_id and isset($item['parent'], $this->_posts_parents[$item['parent']])) {
+                $parent_id = $this->_posts_parents[$item['parent']];
+            }
+            if ($parent_id) {
+                if (is_int($parent_id)) {
+                    $page['post_parent'] = $parent_id;
+                    $label .= ' (child of ' . $parent_id . ')';
+                }
+                else if (isset($this->_posts_parents[$parent_id])) {
+                    $parent_id = $this->_posts_parents[$parent_id];
+                    $page['post_parent'] = $parent_id;
+                    $label .= ' (child of ' . $parent_id . ')';
+                }
+            }
+            echo '<li>' . $label . '&hellip; ';
+            $page_id = wp_insert_post($page);
+            if (is_wp_error($page_id) or !$page_id) {
+                echo $page['post_title'];
+                echo '<span style="color: #d00"> - Error!</span>';
+                return false;
+            }
+            $this->_posts_parents[$item['id']] = (int) $page_id;
+            echo '<a href="' . get_admin_url(null, 'post.php?post=' . $page_id . '&action=edit') . '">' . $page['post_title'] . ' (ID: ' . $page_id . ')</a>';
+            echo '<span style="color: #080"> - Done!</span>';
+            if ($this->_import_sections === 2 and isset($item['section'], $this->_sitemap[$item['section']])) {
+                foreach ($this->_sitemap[$item['section']] as $child) {
+                    $this->_create_page($child, $page_id);
+                }
+            }
+        }
+
+        private function _create_page_old($item, $parent_id = 0)
+        {
+            $page = $this->_default_data;
             $page['post_title'] = (string) $item['name'];
             $label = 'Importing page';
             if ($this->_import_notes and isset($item['data']['note']) and !empty($item['data']['note'])) {
@@ -143,16 +183,44 @@ if (class_exists('WP_Importer')) {
             $this->_import_sections = isset($_POST['importsections']) ? intval($_POST['importsections']) : 4;
             if (isset($this->_xml->link, $this->_xml->title, $this->_xml->version) and strstr($this->_xml->link, 'slickplan')) {
                 echo '<ol>';
-                $this->_parse_slickplan($this->_xml);
-                foreach ($this->_sitemap as $key => $array) {
-                    if ($key > 0 and $this->_import_sections !== 3) {
-                        break;
-                    }
-                    foreach ($array as $item) {
-                        if (isset($item['data']['archetype']) and $item['data']['archetype'] === 'external') {
-                            continue;
+                $this->_sitemap = array();
+                $sections = isset($this->_xml->section) ? $this->_xml->section : array(0 => $this->_xml);
+                $slickplan_new_xml = false;
+                foreach ($sections as $xml) {
+                    $attributes = (array) $xml->attributes();
+                    if (isset($attributes['@attributes']['id'])) {
+                        if ($attributes['@attributes']['id'] === 'svgmainsection') {
+                            $slickplan_new_xml = true;
+                            break;
                         }
-                        $this->_create_page($item);
+                    }
+                }
+                if ($slickplan_new_xml) {
+                    $this->_parse_slickplan($sections);
+                    foreach ($this->_sitemap as $key => $array) {
+                        if ($key !== 'svgmainsection' and $this->_import_sections !== 3) {
+                            break;
+                        }
+                        foreach ($array as $item) {
+                            if (isset($item['archetype']) and $item['archetype'] === 'external' and $this->_ignore_external) {
+                                continue;
+                            }
+                            $this->_create_page($item);
+                        }
+                    }
+                }
+                else {
+                    $this->_parse_slickplan_old($sections);
+                    foreach ($this->_sitemap as $key => $array) {
+                        if ($key > 0 and $this->_import_sections !== 3) {
+                            break;
+                        }
+                        foreach ($array as $item) {
+                            if (isset($item['data']['archetype']) and $item['data']['archetype'] === 'external' and $this->_ignore_external) {
+                                continue;
+                            }
+                            $this->_create_page_old($item);
+                        }
                     }
                 }
                 echo '</ol>';
@@ -168,10 +236,42 @@ if (class_exists('WP_Importer')) {
             echo '</h3>';
         }
 
-        private function _parse_slickplan(&$xml)
+        private function _parse_slickplan($sections)
         {
-            $this->_sitemap = array();
-            $sections = isset($xml->section) ? $xml->section : array(0 => $xml);
+            foreach ($sections as $xml) {
+                $attributes = (array) $xml->attributes();
+                if (isset($attributes['@attributes']['id'])) {
+                    $key = $attributes['@attributes']['id'];
+                }
+                else {
+                    $key = uniqid();
+                }
+                if (isset($xml->cells->cell)) {
+                    $this->_sitemap[$key] = array();
+                    foreach ($xml->cells->cell as $cell) {
+                        $attributes = (array) $cell->attributes();
+                        $cell_id = isset($attributes['@attributes']['id']) ? $attributes['@attributes']['id'] : uniqid();
+                        $this->_sitemap[$key][$cell_id] = array(
+                            'id' => $cell_id,
+                        );
+                        $cell_a = (array) $cell;
+                        foreach ($cell_a as $attr => $value) {
+                            if ($attr{0} === '@') {
+                                continue;
+                            }
+                            if (!$value->count()) {
+                                $this->_sitemap[$key][$cell_id][$attr] = (string) $value;
+                            }
+                        }
+                    }
+                }
+                uasort($this->_sitemap[$key], 'slickplan_importer_cells_uasort');
+            }
+            return $this->_sitemap;
+        }
+
+        private function _parse_slickplan_old($sections)
+        {
             foreach ($sections as $xml) {
                 $attributes = (array) $xml->attributes();
                 if (isset($attributes['@attributes']['id'])) {
@@ -246,4 +346,20 @@ if (class_exists('WP_Importer')) {
 
     $slickplan_import = new Slickplan_Import();
     register_importer('slickplan', 'Slickplan', 'Import pages from a Slickplan\'s XML export file.', array($slickplan_import, 'dispatch'));
+}
+
+function slickplan_importer_cells_uasort($a, $b) {
+    if (!isset($a['level']) or !isset($b['level'])) {
+        return -1;
+    }
+    $a_lvl = (int) (ctype_digit((string) $a['level']) ? $a['level'] : 0);
+    $b_lvl = (int) (ctype_digit((string) $b['level']) ? $b['level'] : 0);
+    if ($a_lvl === $b_lvl) {
+        $a_order = (int) (isset($a['order']) ? $a['order'] : 99999);
+        $b_order = (int) (isset($b['order']) ? $b['order'] : 99999);
+        return ($b_order < $a_order) ? 1 : -1;
+    }
+    else {
+        return ($b_lvl < $a_lvl) ? 1 : -1;
+    }
 }
