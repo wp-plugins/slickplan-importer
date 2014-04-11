@@ -420,13 +420,13 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
                     </label>
                     <br>
                     <label for="importpagetitle2">
-                        <input type="radio" name="importpagetitle" id="importpagetitle2" value="{$page_title_uppercase_first}" checked="checked">
+                        <input type="radio" name="importpagetitle" id="importpagetitle2" value="{$page_title_uppercase_first}">
                         Make just the first character uppercase:
                     </label>
                     <p class="description">This is an example page title</p>
                     <br>
                     <label for="importpagetitle3">
-                        <input type="radio" name="importpagetitle" id="importpagetitle3" value="{$page_title_uppercase_words}" checked="checked">
+                        <input type="radio" name="importpagetitle" id="importpagetitle3" value="{$page_title_uppercase_words}">
                         Uppercase the first character of each word:
                     </label>
                     <p class="description">This Is An Example Page Title</p>
