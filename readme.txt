@@ -3,7 +3,7 @@ Contributors: slickplan
 Donate link: http://slickplan.com/
 Tags: slickplan, import, xml
 Requires at least: 3.0
-Tested up to: 3.7.1
+Tested up to: 3.8.2
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -18,11 +18,15 @@ Import pages from a Slickplan's XML export file.
 
 == Changelog ==
 
+= 0.6 =
+* New: 'Pages Titles' option
+* Updated styling to suit WordPress 3.8
+
 = 0.5 =
-* New: New Slickplan XML format compatibility
+* New: New Slickplan's XML format compatibility
 
 = 0.4 =
-* New: Option to ignore pages marked as 'External' archetype
+* New: Option to ignore pages marked as 'External' page type
 
 = 0.3 =
 * New: Import sections
@@ -30,3 +34,6 @@ Import pages from a Slickplan's XML export file.
 = 0.2 =
 * New: Import notes as pages contents
 * New: Import footer section items
+
+= 0.1 =
+* Initial release
