@@ -18,9 +18,10 @@ Import pages from a Slickplan's XML export file.
 
 == Changelog ==
 
-= 0.6 =
+= 1.0 =
 * New: 'Pages Titles' option
 * Updated styling to suit WordPress 3.8
+* Version bump to 1.0 stable
 
 = 0.5 =
 * New: New Slickplan's XML format compatibility
