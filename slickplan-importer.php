@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/slickplan-importer/
 Description: Import pages from a <a href="http://slickplan.com" target="_blank">Slickplan</a>'s XML export file. To use go to the <a href="import.php">Tools -> Import</a> screen and select Slickplan.
 Author: slickplan.com
 Author URI: http://slickplan.com/
-Version: 1.0
+Version: 0.6
 License: GNU General Public License Version 3 - http://www.gnu.org/licenses/gpl-3.0.html
 */
 
