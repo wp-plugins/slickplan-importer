@@ -3,7 +3,7 @@ Contributors: slickplan
 Donate link: http://slickplan.com/
 Tags: slickplan, import, xml
 Requires at least: 3.0
-Tested up to: 4.0
+Tested up to: 4.0.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -17,6 +17,9 @@ Import pages from a Slickplan's XML export file.
 3. Go to the 'Tools' -> 'Import' screen, Click on 'Slickplan'
 
 == Changelog ==
+
+= 1.1 =
+* Added support for PHP 5.2
 
 = 1.0.1 =
 * Added WordPress 4.0 compatibility
