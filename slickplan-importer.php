@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/slickplan-importer/
 Description: Import pages from a <a href="http://slickplan.com" target="_blank">Slickplan</a>'s XML export file. To use go to the <a href="import.php">Tools -> Import</a> screen and select Slickplan.
 Author: slickplan.com
 Author URI: http://slickplan.com/
-Version: 1.1
+Version: 1.2
 License: GNU General Public License Version 3 - http://www.gnu.org/licenses/gpl-3.0.html
 */
 
@@ -41,6 +41,7 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
         private $_ignore_external = false;
         private $_import_sections;
         private $_page_title_mode;
+        private $_set_order = 0;
         private $_sitemap = array();
         private $_errors = array();
 
@@ -141,6 +142,10 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
                     $label .= ' (child of ' . $parent_id . ')';
                 }
             }
+            if ($this->_set_order > 0) {
+                $page['menu_order'] = $this->_set_order;
+                $this->_set_order += 10;
+            }
             echo '<li>' . $label . '&hellip; ';
             $page_id = wp_insert_post($page);
             if (is_wp_error($page_id) or !$page_id) {
@@ -173,6 +178,7 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
             }
             $this->_xml = simplexml_load_file($file['file']);
             $this->_import_notes = (isset($_POST['importnotes']) and $_POST['importnotes']);
+            $this->_set_order = (isset($_POST['setorder']) and $_POST['setorder']) ? 10 : 0;
             $this->_ignore_external = (isset($_POST['excludeexternal']) and $_POST['excludeexternal']);
             $this->_import_sections = isset($_POST['importsections']) ? intval($_POST['importsections']) : self::SECTIONS_IMPORT_STOP;
             $this->_page_title_mode = isset($_POST['importpagetitle']) ? intval($_POST['importpagetitle']) : self::PAGE_TITLE_NO_CHANGE;
@@ -279,6 +285,11 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
             <td>
                 <fieldset>
                     <legend class="screen-reader-text"><span>Import Settings</span></legend>
+                    <label for="importsetorder">
+                        <input type="checkbox" name="setorder" id="importsetorder" value="2">
+                        Set the menu order number
+                    </label>
+                    <br>
                     <label for="importnotes">
                         <input type="checkbox" name="importnotes" id="importnotes" value="2">
                         Import notes as pages contents

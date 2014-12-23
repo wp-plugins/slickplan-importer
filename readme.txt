@@ -18,19 +18,18 @@ Import pages from a Slickplan's XML export file.
 
 == Changelog ==
 
+= 1.2 =
+* New: Option to set menu order number when importing
+
 = 1.1 =
-* Added support for PHP 5.2
+* Fix: Support for PHP 5.2
 
 = 1.0.1 =
-* Added WordPress 4.0 compatibility
+* New: WordPress 4.x compatibility
 
 = 1.0 =
-* New: 'Pages Titles' option
-* Updated styling to suit WordPress 3.8
-* Version bump to 1.0 stable
-
-= 0.5 =
-* New: New Slickplan's XML format compatibility
+* New: Options to manipulate page titles prior to import
+* Fix: updated styling to suit WordPress 3.8
 
 = 0.4 =
 * New: Option to ignore pages marked as 'External' page type
