@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/slickplan-importer/
 Description: Import pages from a <a href="http://slickplan.com" target="_blank">Slickplan</a>'s XML export file. To use go to the <a href="import.php">Tools -> Import</a> screen and select Slickplan.
 Author: slickplan.com
 Author URI: http://slickplan.com/
-Version: 1.2
+Version: 1.3
 License: GNU General Public License Version 3 - http://www.gnu.org/licenses/gpl-3.0.html
 */
 
@@ -38,6 +38,8 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
         private $_xml;
         private $_default_data = array();
         private $_import_notes = false;
+        private $_create_menu = false;
+        private $_created_menu = false;
         private $_ignore_external = false;
         private $_import_sections;
         private $_page_title_mode;
@@ -131,15 +133,30 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
             if (!$parent_id and isset($item['parent'], $this->_posts_parents[$item['parent']])) {
                 $parent_id = $this->_posts_parents[$item['parent']];
             }
+            $menu_parent = 0;
             if ($parent_id) {
                 if (is_int($parent_id)) {
                     $page['post_parent'] = $parent_id;
                     $label .= ' (child of ' . $parent_id . ')';
                 }
                 else if (isset($this->_posts_parents[$parent_id])) {
-                    $parent_id = $this->_posts_parents[$parent_id];
+                    $parent_id = (int) $this->_posts_parents[$parent_id];
                     $page['post_parent'] = $parent_id;
                     $label .= ' (child of ' . $parent_id . ')';
+                }
+                if ($this->_create_menu and $this->_created_menu and is_int($parent_id)) {
+                    if (isset($this->_menu_items[$parent_id])) {
+                        $menu_parent = $this->_menu_items[$parent_id];
+                    }
+                    else {
+                        $menu_items = (array) wp_get_nav_menu_items($this->_created_menu, array('post_status' => 'publish,draft'));
+                        foreach ($menu_items as $menu_item) {
+                            if ($parent_id === intval($menu_item->object_id)) {
+                                $menu_parent = (int) $menu_item->ID;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             if ($this->_set_order > 0) {
@@ -156,6 +173,16 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
             $this->_posts_parents[$item['id']] = (int) $page_id;
             echo '<a href="' . get_admin_url(null, 'post.php?post=' . $page_id . '&action=edit') . '">' . $page['post_title'] . ' (ID: ' . $page_id . ')</a>';
             echo '<span style="color: #080"> - Done!</span>';
+            if ($this->_create_menu and $this->_created_menu) {
+                wp_update_nav_menu_item($this->_created_menu, 0, array(
+                    'menu-item-title' => $page['post_title'],
+                    'menu-item-object' => 'page',
+                    'menu-item-object-id' => $page_id,
+                    'menu-item-type' => 'post_type',
+                    'menu-item-status' => 'publish',
+                    'menu-item-parent-id' => $menu_parent,
+                ));
+            }
             if ($this->_import_sections === self::SECTIONS_IMPORT_AS_CHILD and isset($item['section'], $this->_sitemap[$item['section']])) {
                 foreach ($this->_sitemap[$item['section']] as $child) {
                     $this->_create_page($child, $page_id);
@@ -178,12 +205,21 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
             }
             $this->_xml = simplexml_load_file($file['file']);
             $this->_import_notes = (isset($_POST['importnotes']) and $_POST['importnotes']);
+            $this->_create_menu = (isset($_POST['createmenu']) and $_POST['createmenu']);
             $this->_set_order = (isset($_POST['setorder']) and $_POST['setorder']) ? 10 : 0;
             $this->_ignore_external = (isset($_POST['excludeexternal']) and $_POST['excludeexternal']);
             $this->_import_sections = isset($_POST['importsections']) ? intval($_POST['importsections']) : self::SECTIONS_IMPORT_STOP;
             $this->_page_title_mode = isset($_POST['importpagetitle']) ? intval($_POST['importpagetitle']) : self::PAGE_TITLE_NO_CHANGE;
             if (isset($this->_xml->link, $this->_xml->title, $this->_xml->version) and strstr($this->_xml->link, 'slickplan')) {
                 echo '<ol>';
+                if ($this->_create_menu) {
+                    $menu_name = $menu_name_orig = (isset($_POST['menuname']) and $_POST['menuname']) ? $_POST['menuname'] : 'Slickplan';
+                    $i = 0;
+                    while (get_term_by('name', $menu_name, 'nav_menu')) {
+                        $menu_name = $menu_name_orig . ' ' . (++$i);
+                    }
+                    $this->_created_menu = wp_create_nav_menu($menu_name);
+                }
                 $this->_sitemap = array();
                 $sections = isset($this->_xml->section) ? $this->_xml->section : array(0 => $this->_xml);
                 $this->_parse_slickplan($sections);
@@ -300,6 +336,10 @@ if (class_exists('WP_Importer') and !class_exists('Slickplan_Import')) {
                         Ignore pages marked as 'External' page type
                     </label>
                     <p class="description">This will also ignore all child pages and sections of the 'External' pages</p>
+                    <label for="createmenu">
+                        <input type="checkbox" name="createmenu" id="createmenu" value="2">
+                        Create menu from imported pages, menu name: <input type="text" name="menuname" value="Slickplan">
+                    </label>
                 </fieldset>
             </td>
         </tr>

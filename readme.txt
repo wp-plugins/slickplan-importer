@@ -3,10 +3,10 @@ Contributors: slickplan
 Donate link: http://slickplan.com/
 Tags: slickplan, import, xml
 Requires at least: 3.0
-Tested up to: 4.2
+Tested up to: 4.2.2
 Stable tag: trunk
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GNU General Public License Version 3
+License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Import pages from a Slickplan's XML export file.
 
@@ -17,6 +17,9 @@ Import pages from a Slickplan's XML export file.
 3. Go to the 'Tools' -> 'Import' screen, Click on 'Slickplan'
 
 == Changelog ==
+
+= 1.3 =
+* New: Option to create menu from imported pages
 
 = 1.2 =
 * New: Option to set menu order number when importing
